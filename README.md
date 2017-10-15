@@ -1,2 +1,43 @@
-# Water-Saturation
+ Water-Saturation
 Liquid water saturation in PEMFC module in FLUENT
+
+
+DEFINE_SOURCE(liquid_source_h2o,c,t,dS,eqn)
+{
+real P_h2o;
+real Psat;
+real dens_liquid;
+real s;
+real term1;
+real term2;
+real source;
+
+s =MAX(0.0001, MIN(C_UDSI(c,t,0),0.999));
+Psat= 100000.0*pow(10,-2.1794+0.02953*T-9.1387/100000*pow(T,2)+1.4451/10000000*pow(T,3)); 
+dens_liquid=-0.0036*pow(T,2)-0.0695*T+1000.5; /*kg m-3*/ 
+P_h2o= C_YI(c, t, 1)*C_R(c,t)*R*(T+273.15)/(MH2O*0.001);
+C_UDMI(c,t,66) =P_h2o;
+
+term1 = (1-s)*(P_h2o-Psat)/R/(T+273.15)*(MH2O*0.001);
+term2 = -1.0*s*dens_liquid;
+C_UDMI(c,t,67) =term1;
+C_UDMI(c,t,68) =term2;
+
+if (term1>term2)
+{
+source = -1.0*kc*term1;
+dS[eqn] = 1.0*(P_h2o-Psat)/R/(T+273.15)*(MH2O*0.001)*kc;
+}
+else
+{
+source = -1.0*kc*term2;
+dS[eqn] = 1.0*dens_liquid*kc;
+} 
+
+C_UDMI(c,t,69) =source;
+C_UDMI(c,t,70) =dS[eqn];
+C_UDMI(c,t,71) = -1.0*(P_h2o-Psat)/R/(T+273.15)*(MH2O*0.001)*kc;
+
+return source;
+
+}
